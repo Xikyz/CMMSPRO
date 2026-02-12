@@ -1,0 +1,51 @@
+name: Deploy CMMS Pro
+
+on:
+  push:
+    branches: ["main"] # Asegúrate de que esto coincida con tu rama (puede ser 'master')
+
+# Permisos para que GitHub Actions pueda escribir en Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # Paso 1: Construir la aplicación
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+      
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          
+      - name: Instalar dependencias
+        run: npm ci # o 'npm install' si no tienes package-lock.json
+        
+      - name: Construir proyecto
+        run: npm run build
+        
+      - name: Subir artefacto (carpeta dist)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  # Paso 2: Desplegar en GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Desplegar
+        id: deployment
+        uses: actions/deploy-pages@v4
